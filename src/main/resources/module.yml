@@ -1,0 +1,5 @@
+name: "Telegram"
+main: "ru.blc.cutlet.telegram.p.TelegramModule"
+description: "Module for telegram bots with Pengrad API"
+version: '1.0.0'
+author: 'Blc_Dragon'
