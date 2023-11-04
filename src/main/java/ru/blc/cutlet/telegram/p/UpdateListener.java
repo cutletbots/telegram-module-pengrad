@@ -114,6 +114,9 @@ public class UpdateListener implements UpdatesListener {
                     return;
                 }
             }
+        if (message.text() == null) {
+            return;
+        }
         if (message.text().startsWith(bot.getCommandsPrefix())) {
             bot.getLogger().debug("found command prefix {}, process command", message.text());
             Cutlet.instance().dispatchCommand(message.text().replaceFirst(bot.getCommandsPrefix(), ""),
