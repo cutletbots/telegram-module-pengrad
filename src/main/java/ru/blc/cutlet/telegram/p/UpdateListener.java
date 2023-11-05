@@ -4,8 +4,11 @@ import com.pengrad.telegrambot.UpdatesListener;
 import com.pengrad.telegrambot.model.*;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import ru.blc.cutlet.api.Cutlet;
+import ru.blc.cutlet.api.event.Event;
 import ru.blc.cutlet.telegram.p.bean.CallbackButton;
 import ru.blc.cutlet.telegram.p.event.chat.MessageNewEvent;
+import ru.blc.cutlet.telegram.p.event.chat.member.LeftChatMemberEvent;
+import ru.blc.cutlet.telegram.p.event.chat.member.NewChatMemberEvent;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,7 +36,10 @@ public class UpdateListener implements UpdatesListener {
     protected void process(Update update) {
         bot.getLogger().debug("processing update {}", update);
         if (update.message() != null) {
-            processNewMessage(update);
+            Message message = update.message();
+            if (message.entities() != null || message.text() != null) processNewTextMessage(update);
+            processNewChatMembers(update);
+            processLeftChatMember(update);
         }
         if (update.callbackQuery() != null) {
             processCallbackQuery(update);
@@ -102,7 +108,7 @@ public class UpdateListener implements UpdatesListener {
         bot.getApiBot().execute(new AnswerCallbackQuery(query.id()));
     }
 
-    protected void processNewMessage(Update update) {
+    protected void processNewTextMessage(Update update) {
         Message message = update.message();
         bot.getLogger().debug("processing new message {}", message);
         if (message.entities() != null)
@@ -124,7 +130,32 @@ public class UpdateListener implements UpdatesListener {
             return;
         }
         bot.getLogger().debug("command not found, just message");
-        MessageNewEvent event = new MessageNewEvent(update, bot.getCommandSender(update));
+        fire(new MessageNewEvent(update, bot.getCommandSender(update)));
+    }
+
+    protected void processNewChatMembers(Update update) {
+        Message message = update.message();
+        if (message == null) return;
+        User[] users = message.newChatMembers();
+        if (users == null) {
+            return;
+        }
+        for (User user : users) {
+            fire(new NewChatMemberEvent(user, update));
+        }
+    }
+
+    protected void processLeftChatMember(Update update) {
+        Message message = update.message();
+        if (message == null) return;
+        User user = message.leftChatMember();
+        if (user == null) {
+            return;
+        }
+        fire(new LeftChatMemberEvent(user, update));
+    }
+
+    protected void fire(Event event) {
         Cutlet.instance().getBotManager().callEvent(event, b -> b instanceof TelegramBot tg && tg == bot);
     }
 }
